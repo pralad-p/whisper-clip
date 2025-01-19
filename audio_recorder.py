@@ -112,6 +112,8 @@ class AudioRecorder:
         with sd.InputStream(callback=self.audio_callback):
             while self.is_recording:
                 sd.sleep(1000)
+        # Ensure the audio input stream is stopped
+        sd.stop()
 
     def audio_callback(self, indata, frames, time, status):
         self.recordings.append(indata.copy())
@@ -141,6 +143,13 @@ class AudioRecorder:
 
     def exit_application(self):
         self.keep_transcribing = False
-        self.transcription_thread.join()
+        if self.transcription_thread.is_alive():
+            self.transcription_thread.join()
+        # Unregister the global hotkey
+        keyboard.unhook_all_hotkeys()
+        # Stop the system tray icon
         self.icon.stop()
-        self.master.quit();
+        # Quit the tkinter application
+        self.master.quit()
+        # Ensure that any lingering threads are killed
+        os._exit(0)
